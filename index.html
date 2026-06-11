@@ -132,7 +132,7 @@ tr:hover td{background:var(--bg2)}
         <span id="user-label">Sin sesión</span>
         <i class="ti ti-logout" style="font-size:12px;opacity:.6"></i>
       </div>
-      <button class="btn" style="padding:5px 10px;font-size:11px" onclick="syncAll().catch(e=>{setSyncState('err','Error de conexión');toast('Error: '+e.message)})"><i class="ti ti-refresh"></i></button>
+      <button class="btn" style="padding:5px 10px;font-size:11px" onclick="syncAll()"><i class="ti ti-refresh"></i></button>
     </div>
   </div>
 
@@ -365,11 +365,16 @@ function setSyncState(s,msg){ const d=document.getElementById('dot'); d.classNam
 // ============================================================
 async function syncAll(){
   setSyncState('load','Sincronizando...');
-  // Lanzar el error hacia arriba para que iniciarSesion pueda reintentarlo
-  db = await callServer('getAll');
-  if(!db || !db.insumos) throw new Error('Respuesta vacía del servidor');
-  setSyncState('ok','Actualizado · '+new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'}));
-  renderDash(); renderIns(); populateInsSel(); updateEqFilter();
+  try{
+    db = await callServer('getAll');
+    if(!db || !db.insumos){ setSyncState('err','Error de datos'); toast('Error al procesar datos'); return; }
+    setSyncState('ok','Actualizado · '+new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'}));
+    renderDash(); renderIns(); populateInsSel(); updateEqFilter();
+  }catch(e){
+    setSyncState('err','Error de conexión');
+    toast('Error al cargar: '+e.message);
+    console.error(e);
+  }
 }
 
 function setBusy(id,state){ const b=document.getElementById(id); if(b){ b.disabled=state; if(state)b.innerHTML='<span class="spinner"></span> Guardando...'; } }
@@ -616,47 +621,21 @@ function doLogin() {
   iniciarSesion({ user, nombre: cuenta.nombre, rol: cuenta.rol });
 }
 
-async function iniciarSesion(sesion) {
+function iniciarSesion(sesion) {
   me = sesion.nombre;
-
-  // Chip topbar
+  // Actualizar chip en topbar
   document.getElementById('user-avatar').textContent = sesion.nombre.charAt(0).toUpperCase();
   document.getElementById('user-label').textContent  = sesion.nombre;
-
-  // Ocultar login → mostrar loading
-  document.getElementById('login-screen').style.display   = 'none';
-  document.getElementById('loading-screen').style.display = 'block';
-  document.getElementById('loading-screen').innerHTML     = '<div class="spinner"></div><br><br>Cargando datos...';
-  document.getElementById('main-app').style.display       = 'none';
-
-  // Poblar selects de mes ANTES de sincronizar
+  // Ocultar login, mostrar app
+  document.getElementById('login-screen').style.display = 'none';
+  // Cargar la app
   const meses=getMeses(); const cur=mesId();
   fillSel('dash-mes',meses,cur); fillSel('con-mes',meses,cur);
   fillSel('mto-mes',meses,cur);  fillSel('hist-mes',meses,cur);
-
-  // Intentar sync hasta 3 veces (GitHub Pages / Apps Script puede tardar el primer request)
-  let intentos = 0;
-  while (intentos < 3) {
-    try {
-      await syncAll();
-      document.getElementById('loading-screen').style.display = 'none';
-      document.getElementById('main-app').style.display       = 'block';
-      return; // éxito
-    } catch(e) {
-      intentos++;
-      if (intentos < 3) {
-        document.getElementById('loading-screen').innerHTML =
-          '<div class="spinner"></div><br><br>Reintentando conexión (' + intentos + '/3)...';
-        await new Promise(r => setTimeout(r, 2000)); // esperar 2s antes de reintentar
-      }
-    }
-  }
-  // Si los 3 intentos fallan, mostrar error con botón de retry
-  document.getElementById('loading-screen').innerHTML =
-    '<div style="color:#A32D2D;font-size:13px"><i class="ti ti-wifi-off" style="font-size:28px;display:block;margin-bottom:8px"></i>' +
-    'No se pudo conectar con el servidor.<br><br>' +
-    '<button class="btn pri" onclick="iniciarSesion(' + JSON.stringify(sesion) + ')">Reintentar</button>' +
-    '&nbsp;<button class="btn" onclick="doLogout()">Cambiar usuario</button></div>';
+  syncAll().then(()=>{
+    document.getElementById('loading-screen').style.display='none';
+    document.getElementById('main-app').style.display='block';
+  });
 }
 
 function doLogout() {

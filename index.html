@@ -260,7 +260,7 @@ tr:hover td{background:var(--bg2)}
 // ============================================================
 // CONFIGURACIÓN — cambia esta URL tras publicar el Apps Script
 // ============================================================
-const API_URL = 'https://script.google.com/macros/s/AKfycbzk6x0Jtfe3-_HXJej02p40SBbJj7tjlduzkyROS2Kd5Z826G1nRm8FkMWIuhsxMvnk0w/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbxQ-b3YXeN5UpsEosP58sLdPb6Zx7PVgQuzX_zbndkBsZVBxRisCBqiu0M202ZCp43G/exec';
 
 // ============================================================
 // Constantes de UI
@@ -274,34 +274,32 @@ let me   = '';
 let busy = false;
 
 // ============================================================
-// API — reemplaza google.script.run con fetch()
+// API — fetch() con manejo correcto de CORS para Apps Script
+// Apps Script permite CORS en GET con follow redirects.
+// Para POST usamos el parámetro en la URL (GET con action+payload).
 // ============================================================
 async function callServer(fn, ...args) {
-  // getAll usa GET; el resto usa POST
-  if (fn === 'getAll') {
-    const res = await fetch(API_URL + '?action=getAll');
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const data = await res.json();
-    if (data.error) throw new Error(data.error);
-    return data;
-  }
-
-  // Mapear argumentos posicionales al payload esperado por doPost
   let payload;
   if (fn === 'eliminar') {
     payload = { tipo: args[0], id: args[1] };
-  } else {
+  } else if (fn !== 'getAll') {
     payload = args[0];
   }
 
-  const res = await fetch(API_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain' }, // Apps Script no acepta application/json en CORS simple
-    body: JSON.stringify({ action: fn, payload })
+  // Siempre GET — Apps Script maneja todo por parámetro de URL
+  // Esto evita el problema de CORS preflight con POST
+  let url = API_URL + '?action=' + encodeURIComponent(fn);
+  if (payload) {
+    url += '&payload=' + encodeURIComponent(JSON.stringify(payload));
+  }
+
+  const res = await fetch(url, {
+    method: 'GET',
+    redirect: 'follow',
   });
   if (!res.ok) throw new Error('HTTP ' + res.status);
   const data = await res.json();
-  if (data.error) throw new Error(data.error);
+  if (data && data.error) throw new Error(data.error);
   return data;
 }
 

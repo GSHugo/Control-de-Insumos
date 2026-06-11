@@ -72,53 +72,9 @@ tr:hover td{background:var(--bg2)}
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--c1);color:#fff;padding:9px 18px;border-radius:var(--rad);font-size:12px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:200;white-space:nowrap;max-width:90vw;text-align:center}
 .toast.show{opacity:1}
 .loading-screen{text-align:center;padding:60px 20px;color:var(--c2)}
-/* ── Login ─────────────────────────────────────────────── */
-#login-screen{position:fixed;inset:0;background:linear-gradient(135deg,#0f4c81 0%,#12A5E9 100%);display:flex;align-items:center;justify-content:center;z-index:999;padding:16px}
-.login-box{background:#fff;border-radius:16px;padding:36px 32px;width:100%;max-width:360px;box-shadow:0 24px 60px rgba(0,0,0,.25)}
-.login-logo{text-align:center;margin-bottom:28px}
-.login-logo .ico{width:56px;height:56px;background:linear-gradient(135deg,#12A5E9,#0f4c81);border-radius:14px;display:inline-flex;align-items:center;justify-content:center;margin-bottom:10px}
-.login-logo .ico i{font-size:28px;color:#fff}
-.login-logo h1{font-size:18px;font-weight:700;color:#0f4c81;margin-bottom:2px}
-.login-logo p{font-size:11px;color:#999}
-.login-field{margin-bottom:14px}
-.login-field label{font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:5px}
-.login-field input{width:100%;padding:10px 12px;border:1.5px solid #dde4ee;border-radius:8px;font-size:13px;font-family:inherit;color:#222;transition:border .15s}
-.login-field input:focus{outline:none;border-color:#12A5E9}
-.login-error{color:#A32D2D;font-size:11px;background:#FCEBEB;border:1px solid #F7C1C1;border-radius:6px;padding:7px 10px;margin-bottom:12px;display:none}
-.login-btn{width:100%;padding:11px;background:linear-gradient(90deg,#12A5E9,#0f4c81);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;transition:opacity .15s;font-family:inherit}
-.login-btn:hover{opacity:.88}.login-btn:disabled{opacity:.5;cursor:not-allowed}
-.login-footer{text-align:center;margin-top:18px;font-size:10px;color:#bbb}
-.user-chip{display:flex;align-items:center;gap:6px;background:var(--bg2);border:1px solid var(--brd);border-radius:20px;padding:4px 10px;font-size:11px;cursor:pointer}
-.user-chip:hover{background:#fde8e8;border-color:#F7C1C1;color:var(--err)}
-.avatar{width:22px;height:22px;border-radius:50%;background:var(--c1);color:#fff;font-size:10px;font-weight:700;display:inline-flex;align-items:center;justify-content:center}
 </style>
 </head>
 <body>
-
-<!-- ══════════════════════════════════════════════════════
-     PANTALLA DE LOGIN
-════════════════════════════════════════════════════════ -->
-<div id="login-screen">
-  <div class="login-box">
-    <div class="login-logo">
-      <div class="ico"><i class="ti ti-box"></i></div>
-      <h1>Control de Insumos</h1>
-      <p>Ingresa tus credenciales para continuar</p>
-    </div>
-    <div class="login-field">
-      <label>Usuario</label>
-      <input type="text" id="login-user" placeholder="Ej. almacen" autocomplete="username" onkeydown="if(event.key==='Enter')document.getElementById('login-pass').focus()">
-    </div>
-    <div class="login-field">
-      <label>Contraseña</label>
-      <input type="password" id="login-pass" placeholder="••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
-    </div>
-    <div class="login-error" id="login-err">Usuario o contraseña incorrectos</div>
-    <button class="login-btn" id="login-btn" onclick="doLogin()">Entrar</button>
-    <div class="login-footer">Control de Insumos · Acceso restringido</div>
-  </div>
-</div>
-
 <div class="app">
   <div class="topbar">
     <div class="logo" style="display:flex;align-items:center;gap:12px">
@@ -127,11 +83,9 @@ tr:hover td{background:var(--bg2)}
 </div>
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
       <div class="sync-pill"><div class="dot load" id="dot"></div><span id="sync-txt">Cargando...</span></div>
-      <div class="user-chip" id="user-chip" onclick="doLogout()" title="Cerrar sesión">
-        <div class="avatar" id="user-avatar">?</div>
-        <span id="user-label">Sin sesión</span>
-        <i class="ti ti-logout" style="font-size:12px;opacity:.6"></i>
-      </div>
+      <select id="usuario-sel" style="width:auto;font-size:12px;padding:5px 8px" onchange="setUser()">
+        <option value="">¿Quién eres?</option>
+      </select>
       <button class="btn" style="padding:5px 10px;font-size:11px" onclick="syncAll()"><i class="ti ti-refresh"></i></button>
     </div>
   </div>
@@ -306,7 +260,7 @@ tr:hover td{background:var(--bg2)}
 // ============================================================
 // CONFIGURACIÓN — cambia esta URL tras publicar el Apps Script
 // ============================================================
-const API_URL = 'https://script.google.com/macros/s/AKfycbzk6x0Jtfe3-_HXJej02p40SBbJj7tjlduzkyROS2Kd5Z826G1nRm8FkMWIuhsxMvnk0w/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbxQ-b3YXeN5UpsEosP58sLdPb6Zx7PVgQuzX_zbndkBsZVBxRisCBqiu0M202ZCp43G/exec';
 
 // ============================================================
 // Constantes de UI
@@ -358,7 +312,7 @@ function getMeses(){ const n=new Date(),r=[]; for(let i=0;i<6;i++){ const d=new 
 function fillSel(id,meses,cur){ const el=document.getElementById(id); if(!el)return; el.innerHTML=meses.map(m=>`<option value="${m}"${m===cur?' selected':''}>${mesLabel(m)}</option>`).join(''); }
 function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.className='toast show'; setTimeout(()=>t.className='toast',2400); }
 function setSyncState(s,msg){ const d=document.getElementById('dot'); d.className='dot'+(s==='ok'?'':s==='err'?' err':' load'); document.getElementById('sync-txt').textContent=msg; }
-// me se asigna desde login
+function setUser(){ me=document.getElementById('usuario-sel').value; }
 
 // ============================================================
 // Sincronización
@@ -589,70 +543,6 @@ function exportExcel(){
 }
 
 // ============================================================
-// LOGIN — usuarios y contraseñas
-// Edita este objeto para agregar/quitar usuarios
-// ============================================================
-const CUENTAS = {
-  'admin':      { pass: 'admin123',   nombre: 'Administrador', rol: 'admin'   },
-  'almacen':    { pass: 'almacen1',   nombre: 'Almacén',       rol: 'usuario' },
-  'produccion': { pass: 'prod2024',   nombre: 'Producción',    rol: 'usuario' },
-  'oficina':    { pass: 'ofic2024',   nombre: 'Oficina',       rol: 'usuario' },
-};
-const SESSION_KEY = 'ci_session';
-
-function doLogin() {
-  const user = document.getElementById('login-user').value.trim().toLowerCase();
-  const pass = document.getElementById('login-pass').value;
-  const err  = document.getElementById('login-err');
-  const btn  = document.getElementById('login-btn');
-
-  if (!user || !pass) { err.textContent='Completa ambos campos'; err.style.display='block'; return; }
-
-  const cuenta = CUENTAS[user];
-  if (!cuenta || cuenta.pass !== pass) {
-    err.textContent='Usuario o contraseña incorrectos';
-    err.style.display='block';
-    document.getElementById('login-pass').value='';
-    return;
-  }
-
-  // Sesión válida — guardar en sessionStorage (se borra al cerrar el tab)
-  sessionStorage.setItem(SESSION_KEY, JSON.stringify({ user, nombre: cuenta.nombre, rol: cuenta.rol }));
-  iniciarSesion({ user, nombre: cuenta.nombre, rol: cuenta.rol });
-}
-
-function iniciarSesion(sesion) {
-  me = sesion.nombre;
-  // Actualizar chip en topbar
-  document.getElementById('user-avatar').textContent = sesion.nombre.charAt(0).toUpperCase();
-  document.getElementById('user-label').textContent  = sesion.nombre;
-  // Ocultar login, mostrar app
-  document.getElementById('login-screen').style.display = 'none';
-  // Cargar la app
-  const meses=getMeses(); const cur=mesId();
-  fillSel('dash-mes',meses,cur); fillSel('con-mes',meses,cur);
-  fillSel('mto-mes',meses,cur);  fillSel('hist-mes',meses,cur);
-  syncAll().then(()=>{
-    document.getElementById('loading-screen').style.display='none';
-    document.getElementById('main-app').style.display='block';
-  });
-}
-
-function doLogout() {
-  if (!confirm('¿Cerrar sesión?')) return;
-  sessionStorage.removeItem(SESSION_KEY);
-  // Ocultar app, mostrar login
-  document.getElementById('main-app').style.display='none';
-  document.getElementById('loading-screen').style.display='block';
-  document.getElementById('loading-screen').innerHTML='<div class="spinner"></div><br><br>Cargando datos...';
-  document.getElementById('login-screen').style.display='flex';
-  document.getElementById('login-user').value='';
-  document.getElementById('login-pass').value='';
-  document.getElementById('login-err').style.display='none';
-  me = '';
-}
-
-// ============================================================
 // Navegación y modales
 // ============================================================
 function goTab(name,el){
@@ -672,27 +562,22 @@ function closeOv(id){ document.getElementById('ov-'+id).classList.remove('open')
 document.getElementById('ov-ins').addEventListener('click',function(e){ if(e.target===this)closeOv('ins'); });
 document.getElementById('ov-mto').addEventListener('click',function(e){ if(e.target===this)closeOv('mto'); });
 
+// Poblar selector de usuarios
+const usuarioSel=document.getElementById('usuario-sel');
+USUARIOS.forEach(u=>{ const o=document.createElement('option'); o.value=u; o.textContent=u; usuarioSel.appendChild(o); });
 
 // ============================================================
 // Inicio
 // ============================================================
-window.onload = function(){
+window.onload = async function(){
   document.getElementById('mto-fecha').value=new Date().toISOString().slice(0,10);
   document.getElementById('con-fecha').value=new Date().toISOString().slice(0,10);
-
-  // Verificar sesión activa (sessionStorage se borra al cerrar el tab)
-  const raw = sessionStorage.getItem(SESSION_KEY);
-  if (raw) {
-    try {
-      const sesion = JSON.parse(raw);
-      if (CUENTAS[sesion.user]) { iniciarSesion(sesion); return; }
-    } catch(e) {}
-  }
-  // Sin sesión — mostrar login, ocultar app
+  const meses=getMeses(); const cur=mesId();
+  fillSel('dash-mes',meses,cur); fillSel('con-mes',meses,cur);
+  fillSel('mto-mes',meses,cur); fillSel('hist-mes',meses,cur);
+  await syncAll();
   document.getElementById('loading-screen').style.display='none';
-  document.getElementById('main-app').style.display='none';
-  document.getElementById('login-screen').style.display='flex';
-  document.getElementById('login-user').focus();
+  document.getElementById('main-app').style.display='block';
 };
 </script>
 </body>
